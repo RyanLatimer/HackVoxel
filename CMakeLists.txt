@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(include)
 include_directories(libs/glad/include)
 include_directories(libs/glfw/include)
+include_directories(libs/glm)
 
 # Link GLFW and GLAD
 add_library(glad STATIC libs/glad/src/gl.c)
