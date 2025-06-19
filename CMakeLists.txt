@@ -11,7 +11,7 @@ include_directories(libs/glm)
 
 # Link GLFW and GLAD
 add_library(glad STATIC libs/glad/src/gl.c)
-add_executable(HackVoxel src/main.cpp src/shader.cpp)
+add_executable(HackVoxel src/main.cpp src/shader.cpp src/camera.cpp)
 
 # Platform-specific GLFW link
 if (WIN32)
