@@ -1,0 +1,63 @@
+# Build directories
+build/
+out/
+Debug/
+Release/
+x64/
+x86/
+
+# Visual Studio files
+.vs/
+*.vcxproj*
+*.sln
+*.suo
+*.user
+*.aps
+*.pch
+*.vspscc
+*.vssscc
+*_i.c
+*_p.c
+*.ncb
+*.tlb
+*.tlh
+*.bak
+*.cache
+*.ilk
+*.log
+*.lib
+*.sbr
+*.obj
+*.pdb
+*.idb
+*.exe
+*.dll
+*.manifest
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+Makefile
+
+# IDE files
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Log files
+*.log
