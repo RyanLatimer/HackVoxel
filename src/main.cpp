@@ -87,10 +87,19 @@ out vec4 FragColor;
 void main() { FragColor = vec4(fColor, 1.0); }
 )";
 
+std::vector<VoxelChunk> chunks;
+int gridSize = 4;
+
 // ============================================================================
 // MAIN FUNCTION - APPLICATION ENTRY POINT
 // ============================================================================
 int main() {
+    // Initialize chunks
+    for (int x = -gridSize; x <= gridSize; x++) {
+        for (int z = -gridSize; z <= gridSize; z++) {
+            chunks.emplace_back(x, z);
+        }
+    }
     // Init GLFW
     if (!glfwInit()) return -1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -133,6 +142,11 @@ int main() {
         // Clear
         glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        for (VoxelChunk& chunk : chunks) {
+        chunk.render(shaderProgram);
+        }
+
         // Matrices
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 view = camera.getViewMatrix();
