@@ -58,12 +58,12 @@ void Camera::processKeyboard(GLFWwindow* window, float deltaTime) {
     
     // Upward movement (Q key)
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-        position += up * velocity;
+        position -= up * velocity;
     }
     
     // Downward movement (E key)
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-        position -= up * velocity;
+        position += up * velocity;
     }
     
     // Exit application (ESC key)

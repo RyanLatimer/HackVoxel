@@ -2,12 +2,22 @@
 #include <glad/gl.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "../libs/FastNoiseLite/FastNoiseLite.h"
 
 VoxelChunk::VoxelChunk() {
+
+    FastNoiseLite noise;
+    noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    noise.SetFrequency(0.03f);
+
+
     for (int x = 0; x < CHUNK_SIZE; x++) {
         for (int y = 0; y < CHUNK_SIZE; y++) {
+            float heightValue = noise.GetNoise((float)x, (float)y);
+            int height = (int)((heightValue + 1.0f) * 0.5f * CHUNK_SIZE);
+
             for (int z = 0; z < CHUNK_SIZE; z++) {
-                blocks[x][y][z] = y < 3 ? 1 : 0;
+                blocks[x][y][z] = (y <= height) ? 1 : 0;
             }
         }
     }
