@@ -6,9 +6,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
 
-// Static member definition
-TextureAtlas* VoxelChunk::textureAtlas = nullptr;
-
 // Simple noise function for terrain generation
 float simpleNoise(float x, float z) {
     return sin(x * 0.1f) * cos(z * 0.1f) * 0.5f + 
@@ -229,44 +226,40 @@ void VoxelChunk::addFace(float x1, float y1, float z1, float x2, float y2, float
 
 TextureAtlas::TextureUV VoxelChunk::getTextureForBlock(BlockType blockType, int faceDirection) const
 {
-    if (!textureAtlas) {
-        // Return default UV if no texture atlas is set
-        TextureAtlas::TextureUV defaultUV = {0.0f, 0.0f, 1.0f, 1.0f};
-        return defaultUV;
-    }
+    TextureAtlas atlas; // This is temporary - we'll fix this later
     
     switch (blockType) {
         case BlockType::GRASS:
             if (faceDirection == 4) { // Top face
-                return textureAtlas->getUV(TextureAtlas::BlockType::GRASS_TOP);
+                return atlas.getUV(TextureAtlas::BlockType::GRASS_TOP);
             } else if (faceDirection == 5) { // Bottom face
-                return textureAtlas->getUV(TextureAtlas::BlockType::DIRT);
+                return atlas.getUV(TextureAtlas::BlockType::DIRT);
             } else { // Side faces
-                return textureAtlas->getUV(TextureAtlas::BlockType::GRASS_SIDE);
+                return atlas.getUV(TextureAtlas::BlockType::GRASS_SIDE);
             }
         case BlockType::DIRT:
-            return textureAtlas->getUV(TextureAtlas::BlockType::DIRT);
+            return atlas.getUV(TextureAtlas::BlockType::DIRT);
         case BlockType::STONE:
-            return textureAtlas->getUV(TextureAtlas::BlockType::STONE);
+            return atlas.getUV(TextureAtlas::BlockType::STONE);
         case BlockType::COBBLESTONE:
-            return textureAtlas->getUV(TextureAtlas::BlockType::COBBLESTONE);
+            return atlas.getUV(TextureAtlas::BlockType::COBBLESTONE);
         case BlockType::WOOD_PLANK:
-            return textureAtlas->getUV(TextureAtlas::BlockType::WOOD_PLANK);
+            return atlas.getUV(TextureAtlas::BlockType::WOOD_PLANK);
         case BlockType::WOOD_LOG:
             if (faceDirection == 4 || faceDirection == 5) { // Top/bottom faces
-                return textureAtlas->getUV(TextureAtlas::BlockType::WOOD_LOG_TOP);
+                return atlas.getUV(TextureAtlas::BlockType::WOOD_LOG_TOP);
             } else { // Side faces
-                return textureAtlas->getUV(TextureAtlas::BlockType::WOOD_LOG_SIDE);
+                return atlas.getUV(TextureAtlas::BlockType::WOOD_LOG_SIDE);
             }
         case BlockType::LEAVES:
-            return textureAtlas->getUV(TextureAtlas::BlockType::LEAVES);
+            return atlas.getUV(TextureAtlas::BlockType::LEAVES);
         case BlockType::SAND:
-            return textureAtlas->getUV(TextureAtlas::BlockType::SAND);
+            return atlas.getUV(TextureAtlas::BlockType::SAND);
         case BlockType::WATER:
-            return textureAtlas->getUV(TextureAtlas::BlockType::WATER);
+            return atlas.getUV(TextureAtlas::BlockType::WATER);
         case BlockType::BEDROCK:
-            return textureAtlas->getUV(TextureAtlas::BlockType::BEDROCK);
+            return atlas.getUV(TextureAtlas::BlockType::BEDROCK);
         default:
-            return textureAtlas->getUV(TextureAtlas::BlockType::STONE);
+            return atlas.getUV(TextureAtlas::BlockType::STONE);
     }
 }

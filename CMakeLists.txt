@@ -13,7 +13,7 @@ include_directories(libs/FastNoiseLite)
 
 # Link GLFW and GLAD
 add_library(glad STATIC libs/glad/src/gl.c)
-add_executable(HackVoxel src/main.cpp src/shader.cpp src/camera.cpp src/voxel_chunk.cpp)
+add_executable(HackVoxel src/main.cpp src/shader.cpp src/camera.cpp src/voxel_chunk.cpp src/player.cpp src/texture_atlas.cpp)
 
 # Platform-specific GLFW link
 if (WIN32)

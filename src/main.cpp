@@ -14,41 +14,12 @@
 #include "shader.h"
 #include "camera.h"
 #include "voxel_chunk.h"
+#include "player.h"
+#include "texture_atlas.h"
 
 std::vector<VoxelChunk> chunks;
 int gridSize = 4;
-
-// Function to create a procedural checkerboard texture
-GLuint createCheckerboardTexture(int width = 64, int height = 64) {
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    
-    // Create checkerboard pattern
-    std::vector<unsigned char> data(width * height * 3);
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int index = (y * width + x) * 3;
-            // Create 8x8 checkerboard pattern
-            bool checker = ((x / 8) + (y / 8)) % 2;
-            unsigned char color = checker ? 220 : 100; // Light gray vs dark gray
-            data[index] = color;     // R
-            data[index + 1] = color; // G  
-            data[index + 2] = color; // B
-        }
-    }
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
-    glGenerateMipmap(GL_TEXTURE_2D);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return textureID;
-}
+TextureAtlas* textureAtlas = nullptr;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -58,6 +29,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 // Timing
 float deltaTime = 0.0f, lastFrame = 0.0f;
 Camera camera;
+Player player;
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
@@ -125,13 +97,15 @@ int main()
         return -1;
     }
     std::cout << "OpenGL loaded" << std::endl;
-    
-    glEnable(GL_DEPTH_TEST);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    // Create texture
-    GLuint texture = createCheckerboardTexture();
-    std::cout << "Checkerboard texture created" << std::endl;
+      glEnable(GL_DEPTH_TEST);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);    // Create texture atlas
+    textureAtlas = new TextureAtlas();
+    if (!textureAtlas->initialize()) {
+        std::cerr << "Failed to initialize texture atlas!" << std::endl;
+        return -1;
+    }
+    VoxelChunk::textureAtlas = textureAtlas; // Set static reference
+    std::cout << "Texture atlas created successfully" << std::endl;
 
     // NOW initialize chunks after OpenGL is ready
     std::cout << "Creating chunks..." << std::endl;
@@ -154,14 +128,13 @@ int main()
     std::cout << "Starting render loop..." << std::endl;
 
     while (!glfwWindowShouldClose(window))
-    {
-        // Frame timing
+    {        // Frame timing
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         
-        // Input
-        camera.processKeyboard(window, deltaTime);
+        // Update player physics and input (this will also update camera position)
+        player.update(deltaTime, window, camera, chunks);
         
         // Clear
         glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
@@ -172,11 +145,8 @@ int main()
         glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), 800.0f / 600.0f, 0.1f, 100.0f);
         glUseProgram(shaderProgram);
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
-        // Bind texture
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));        // Bind texture atlas
+        textureAtlas->bind(0);
         glUniform1i(glGetUniformLocation(shaderProgram, "ourTexture"), 0);
 
         // Render all chunks
@@ -195,10 +165,8 @@ int main()
         }
     }
     
-    std::cout << "Exiting render loop..." << std::endl;
-
-    // Cleanup
-    glDeleteTextures(1, &texture);
+    std::cout << "Exiting render loop..." << std::endl;    // Cleanup
+    delete textureAtlas;
     glDeleteProgram(shaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();
