@@ -229,11 +229,34 @@ TextureAtlas::TextureUV VoxelChunk::getTextureForBlock(BlockType blockType, int 
         case BlockType::LEAVES:
             return textureAtlas->getUV(TextureAtlas::BlockType::LEAVES);
         case BlockType::SAND:
-            return textureAtlas->getUV(TextureAtlas::BlockType::SAND);
-        case BlockType::WATER:
+            return textureAtlas->getUV(TextureAtlas::BlockType::SAND);        case BlockType::WATER:
             return textureAtlas->getUV(TextureAtlas::BlockType::WATER);
         case BlockType::BEDROCK:
             return textureAtlas->getUV(TextureAtlas::BlockType::BEDROCK);
+        case BlockType::SNOW:
+            return textureAtlas->getUV(TextureAtlas::BlockType::SNOW);
+        case BlockType::ICE:
+            return textureAtlas->getUV(TextureAtlas::BlockType::ICE);
+        case BlockType::GLOWSTONE:
+            return textureAtlas->getUV(TextureAtlas::BlockType::GLOWSTONE);
+        case BlockType::OBSIDIAN:
+            return textureAtlas->getUV(TextureAtlas::BlockType::OBSIDIAN);
+        case BlockType::BRICK:
+            return textureAtlas->getUV(TextureAtlas::BlockType::BRICK);
+        case BlockType::MOSSY_STONE:
+            return textureAtlas->getUV(TextureAtlas::BlockType::MOSSY_STONE);
+        case BlockType::GRAVEL:
+            return textureAtlas->getUV(TextureAtlas::BlockType::GRAVEL);
+        case BlockType::GOLD_ORE:
+            return textureAtlas->getUV(TextureAtlas::BlockType::GOLD_ORE);
+        case BlockType::IRON_ORE:
+            return textureAtlas->getUV(TextureAtlas::BlockType::IRON_ORE);
+        case BlockType::DIAMOND_ORE:
+            return textureAtlas->getUV(TextureAtlas::BlockType::DIAMOND_ORE);
+        case BlockType::EMERALD_ORE:
+            return textureAtlas->getUV(TextureAtlas::BlockType::EMERALD_ORE);
+        case BlockType::REDSTONE_ORE:
+            return textureAtlas->getUV(TextureAtlas::BlockType::REDSTONE_ORE);
         default:
             return textureAtlas->getUV(TextureAtlas::BlockType::STONE);
     }

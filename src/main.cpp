@@ -17,9 +17,13 @@
 #include "player.h"
 #include "texture_atlas.h"
 #include "chunk_manager.h"
+#include "skybox.h"
 
+// Global variables
 ChunkManager chunkManager;
 TextureAtlas* textureAtlas = nullptr;
+Skybox* skybox = nullptr;
+float timeOfDay = 0.5f; // 0.0 = midnight, 0.5 = noon, 1.0 = midnight
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -104,7 +108,15 @@ int main()
         std::cerr << "Failed to initialize texture atlas!" << std::endl;
         return -1;
     }    VoxelChunk::textureAtlas = textureAtlas; // Set static reference
-    std::cout << "Texture atlas created successfully" << std::endl;    // Initialize chunk manager (infinite world system)
+    std::cout << "Texture atlas created successfully" << std::endl;    // Initialize skybox
+    skybox = new Skybox();
+    if (!skybox->initialize()) {
+        std::cerr << "Failed to initialize skybox!" << std::endl;
+        return -1;
+    }
+    std::cout << "Skybox created successfully" << std::endl;
+    
+    // Initialize chunk manager (infinite world system)
     std::cout << "Initializing chunk manager for infinite world..." << std::endl;
     chunkManager.initialize(player.position);
     
@@ -121,20 +133,42 @@ int main()
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        
-        // Update chunk manager based on player position
+          // Update chunk manager based on player position
         chunkManager.update(player.position);
         
         // Update player physics and input (this will also update camera position)
         player.update(deltaTime, window, camera, chunkManager);
         
-        // Clear
-        glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
+        // Update skybox animation
+        skybox->update(deltaTime);
+        
+        // Update time of day (slow cycle for demonstration)
+        timeOfDay += deltaTime * 0.01f; // Very slow day/night cycle
+        if (timeOfDay > 1.0f) timeOfDay = 0.0f;
+        
+        // Set clear color based on time of day for better atmosphere
+        glm::vec3 horizonColor;
+        if (timeOfDay < 0.25f || timeOfDay > 0.75f) {
+            // Night
+            horizonColor = glm::vec3(0.02f, 0.02f, 0.1f);
+        } else if (timeOfDay < 0.35f || timeOfDay > 0.65f) {
+            // Sunrise/Sunset
+            horizonColor = glm::vec3(0.4f, 0.2f, 0.3f);
+        } else {
+            // Day
+            horizonColor = glm::vec3(0.6f, 0.8f, 1.0f);
+        }
+        
+        // Clear with atmospheric color
+        glClearColor(horizonColor.r, horizonColor.g, horizonColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);        // Setup matrices
         glm::mat4 view = camera.getViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), 800.0f / 600.0f, 0.1f, 1000.0f);
         
-        // Use shader program first
+        // Render skybox first (before terrain)
+        skybox->render(view, projection, timeOfDay);
+        
+        // Use shader program for terrain
         glUseProgram(shaderProgram);
         
         // Bind texture atlas
@@ -156,6 +190,7 @@ int main()
     
     std::cout << "Exiting render loop..." << std::endl;    // Cleanup
     delete textureAtlas;
+    delete skybox;
     glDeleteProgram(shaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();

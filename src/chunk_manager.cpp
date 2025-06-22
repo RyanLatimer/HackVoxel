@@ -8,24 +8,35 @@
 ChunkManager::ChunkManager() 
     : lastPlayerChunk(0, 0)
     , lastRenderedCount(0)
-{
-    // Initialize noise generators for terrain
+{    // Initialize noise generators for more beautiful terrain
     heightNoise.SetSeed(12345);
     heightNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    heightNoise.SetFrequency(0.01f);
+    heightNoise.SetFrequency(0.008f);  // Smoother terrain
     heightNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
-    heightNoise.SetFractalOctaves(4);
-    heightNoise.SetFractalLacunarity(2.0f);
-    heightNoise.SetFractalGain(0.5f);
+    heightNoise.SetFractalOctaves(5);  // More detail
+    heightNoise.SetFractalLacunarity(2.2f);
+    heightNoise.SetFractalGain(0.45f);
     
-    // Cave generation noise
+    // Cave generation noise - more organic caves
     caveNoise.SetSeed(54321);
     caveNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    caveNoise.SetFrequency(0.05f);
+    caveNoise.SetFrequency(0.04f);
+    caveNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
+    caveNoise.SetFractalOctaves(3);
     
-    // Biome noise for variation
+    // Enhanced biome noise for smoother transitions
     biomeNoise.SetSeed(99999);
-    biomeNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);    biomeNoise.SetFrequency(0.005f);
+    biomeNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    biomeNoise.SetFrequency(0.003f);  // Larger biome regions
+    
+    // Temperature and humidity for better biome generation
+    temperatureNoise.SetSeed(11111);
+    temperatureNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    temperatureNoise.SetFrequency(0.004f);
+    
+    humidityNoise.SetSeed(22222);
+    humidityNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+    humidityNoise.SetFrequency(0.0035f);
     
     std::cout << "ChunkManager initialized with procedural terrain generation" << std::endl;
 }
@@ -203,19 +214,91 @@ void ChunkManager::loadChunk(const ChunkCoord& coord) {
     }
     
     // Create new chunk
-    auto chunk = std::make_unique<VoxelChunk>(coord.x, coord.z);
-    
-    // Generate terrain using noise
+    auto chunk = std::make_unique<VoxelChunk>(coord.x, coord.z);    // Generate enhanced terrain using improved noise
     for (int x = 0; x < VoxelChunk::CHUNK_SIZE; x++) {
         for (int z = 0; z < VoxelChunk::CHUNK_SIZE; z++) {
             float worldX = coord.x * VoxelChunk::CHUNK_SIZE + x;
-            float worldZ = coord.z * VoxelChunk::CHUNK_SIZE + z;            // Get height from noise - improve height range
-            float heightValue = heightNoise.GetNoise(worldX, worldZ);
-            float biomeValue = biomeNoise.GetNoise(worldX, worldZ);
+            float worldZ = coord.z * VoxelChunk::CHUNK_SIZE + z;
             
-            // Convert to height with better range (6-12 for more realistic terrain)
-            int surfaceHeight = static_cast<int>((heightValue * 0.5f + 0.5f) * 6 + 6);
-            surfaceHeight = std::clamp(surfaceHeight, 3, 13);
+            // Enhanced terrain generation with multiple noise layers
+            float heightValue = heightNoise.GetNoise(worldX, worldZ);
+            float temperatureValue = temperatureNoise.GetNoise(worldX, worldZ);
+            float humidityValue = humidityNoise.GetNoise(worldX, worldZ);
+            float mountainValue = heightNoise.GetNoise(worldX * 0.2f, worldZ * 0.2f);
+            float detailValue = heightNoise.GetNoise(worldX * 3.0f, worldZ * 3.0f);
+            
+            // Advanced biome determination based on temperature and humidity
+            enum BiomeType { 
+                TUNDRA, TAIGA, PLAINS, DESERT, SAVANNA, 
+                TEMPERATE_FOREST, TROPICAL_FOREST, SWAMP, 
+                MOUNTAINS, SNOW_PEAKS, BEACH 
+            };
+            
+            BiomeType biome;
+            
+            // Biome selection based on temperature and humidity
+            if (temperatureValue < -0.4f) {
+                if (humidityValue < -0.2f) {
+                    biome = TUNDRA;
+                } else {
+                    biome = TAIGA;
+                }
+            } else if (temperatureValue > 0.4f) {
+                if (humidityValue < -0.3f) {
+                    biome = DESERT;
+                } else if (humidityValue > 0.3f) {
+                    biome = TROPICAL_FOREST;
+                } else {
+                    biome = SAVANNA;
+                }
+            } else {
+                if (humidityValue < -0.2f) {
+                    biome = PLAINS;
+                } else if (humidityValue > 0.4f) {
+                    biome = SWAMP;
+                } else {
+                    biome = TEMPERATE_FOREST;
+                }
+            }
+            
+            // Mountain biomes override based on elevation
+            if (mountainValue > 0.3f) {
+                if (temperatureValue < 0.0f) {
+                    biome = SNOW_PEAKS;
+                } else {
+                    biome = MOUNTAINS;
+                }
+            }
+            
+            // Calculate height based on biome with more variation
+            int surfaceHeight;
+            switch (biome) {
+                case SNOW_PEAKS:
+                    surfaceHeight = static_cast<int>((heightValue * 0.3f + 0.7f) * 10 + mountainValue * 8 + 12);
+                    break;
+                case MOUNTAINS:
+                    surfaceHeight = static_cast<int>((heightValue * 0.4f + 0.6f) * 8 + mountainValue * 6 + 10);
+                    break;
+                case DESERT:
+                    surfaceHeight = static_cast<int>((heightValue * 0.3f + 0.7f) * 4 + detailValue * 3 + 6);
+                    break;
+                case SWAMP:
+                    surfaceHeight = static_cast<int>((heightValue * 0.2f + 0.8f) * 2 + 4);
+                    break;
+                case BEACH:
+                    surfaceHeight = static_cast<int>((heightValue * 0.1f + 0.9f) * 1 + 3);
+                    break;
+                case TUNDRA:
+                    surfaceHeight = static_cast<int>((heightValue * 0.3f + 0.7f) * 5 + 5);
+                    break;
+                case TAIGA:
+                    surfaceHeight = static_cast<int>((heightValue * 0.4f + 0.6f) * 6 + 6);
+                    break;
+                default:
+                    surfaceHeight = static_cast<int>((heightValue * 0.5f + 0.5f) * 7 + 7);
+                    break;
+            }
+            surfaceHeight = std::clamp(surfaceHeight, 4, 20);
             
             // Generate terrain layers
             for (int y = 0; y < VoxelChunk::CHUNK_SIZE; y++) {
@@ -227,23 +310,118 @@ void ChunkManager::loadChunk(const ChunkCoord& coord) {
                 } else if (y <= surfaceHeight) {
                     // Check for caves
                     float caveValue = caveNoise.GetNoise(worldX, y * 2.0f, worldZ);
-                    if (caveValue > 0.4f && y > 1 && y < surfaceHeight - 1) {
+                    if (caveValue > 0.45f && y > 1 && y < surfaceHeight - 1) {
                         blockType = BlockType::AIR; // Cave
                     } else {
-                        // Surface block
-                        if (y == surfaceHeight) {
-                            // Biome-based surface blocks
-                            if (biomeValue > 0.3f) {
-                                blockType = BlockType::SAND;
-                            } else if (surfaceHeight < 6) {
-                                blockType = BlockType::SAND;
-                            } else {
-                                blockType = BlockType::GRASS;
+                        // Generate ore deposits
+                        float oreNoise = caveNoise.GetNoise(worldX * 3.0f, y * 3.0f, worldZ * 3.0f);
+                        bool isOre = false;
+                        
+                        if (y < 4 && oreNoise > 0.85f) {
+                            // Deep ores
+                            if (oreNoise > 0.98f) {
+                                blockType = BlockType::DIAMOND_ORE;
+                                isOre = true;
+                            } else if (oreNoise > 0.95f) {
+                                blockType = BlockType::EMERALD_ORE;
+                                isOre = true;
+                            } else if (oreNoise > 0.90f) {
+                                blockType = BlockType::GOLD_ORE;
+                                isOre = true;
                             }
-                        } else if (y > surfaceHeight - 3) {
-                            blockType = BlockType::DIRT;
-                        } else {
-                            blockType = BlockType::STONE;
+                        } else if (y < 8 && oreNoise > 0.80f) {
+                            // Mid-level ores
+                            if (oreNoise > 0.92f) {
+                                blockType = BlockType::IRON_ORE;
+                                isOre = true;
+                            } else if (oreNoise > 0.88f) {
+                                blockType = BlockType::REDSTONE_ORE;
+                                isOre = true;
+                            }
+                        }
+                          if (!isOre) {
+                            // Enhanced terrain generation based on biome
+                            if (y == surfaceHeight) {
+                                // Surface block based on biome
+                                switch (biome) {
+                                    case DESERT:
+                                        blockType = BlockType::SAND;
+                                        break;
+                                    case BEACH:
+                                        blockType = BlockType::SAND;
+                                        break;
+                                    case SNOW_PEAKS:
+                                    case TUNDRA:
+                                        blockType = BlockType::SNOW;
+                                        break;
+                                    case MOUNTAINS:
+                                        if (surfaceHeight > 15) {
+                                            blockType = BlockType::SNOW;
+                                        } else if (surfaceHeight > 12) {
+                                            blockType = BlockType::STONE;
+                                        } else {
+                                            blockType = BlockType::GRASS;
+                                        }
+                                        break;
+                                    case SWAMP:
+                                        // Swampy grass
+                                        blockType = BlockType::GRASS;
+                                        break;
+                                    case TAIGA:
+                                    case TEMPERATE_FOREST:
+                                    case TROPICAL_FOREST:
+                                        blockType = BlockType::GRASS;
+                                        break;
+                                    case SAVANNA:
+                                        // Dry grass
+                                        blockType = BlockType::GRASS;
+                                        break;
+                                    default: // PLAINS
+                                        blockType = BlockType::GRASS;
+                                        break;
+                                }
+                            } else if (y > surfaceHeight - 3) {
+                                // Sub-surface layers based on biome
+                                switch (biome) {
+                                    case DESERT:
+                                    case BEACH:
+                                        if (y > surfaceHeight - 2) {
+                                            blockType = BlockType::SAND;
+                                        } else {
+                                            blockType = BlockType::DIRT;
+                                        }
+                                        break;
+                                    case SNOW_PEAKS:
+                                    case TUNDRA:
+                                        blockType = BlockType::DIRT;
+                                        break;
+                                    case MOUNTAINS:
+                                        if (y > surfaceHeight - 2) {
+                                            blockType = BlockType::DIRT;
+                                        } else {
+                                            blockType = BlockType::STONE;
+                                        }
+                                        break;
+                                    case SWAMP:
+                                        // Rich, dark soil
+                                        blockType = BlockType::DIRT;
+                                        break;
+                                    default:
+                                        blockType = BlockType::DIRT;
+                                        break;
+                                }
+                            } else if (y > surfaceHeight - 8) {
+                                // Deeper layers with biome variation
+                                if ((biome == MOUNTAINS || biome == SNOW_PEAKS) && 
+                                    heightNoise.GetNoise(worldX * 4.0f, y * 4.0f, worldZ * 4.0f) > 0.2f) {
+                                    blockType = BlockType::COBBLESTONE;
+                                } else {
+                                    blockType = BlockType::STONE;
+                                }
+                            } else {
+                                // Deep stone layer
+                                blockType = BlockType::STONE;
+                            }
                         }
                     }
                 }

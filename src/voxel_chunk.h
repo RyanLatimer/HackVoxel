@@ -16,7 +16,19 @@ enum class BlockType : int {
     LEAVES = 7,
     SAND = 8,
     WATER = 9,
-    BEDROCK = 10
+    BEDROCK = 10,
+    SNOW = 11,
+    ICE = 12,
+    GLOWSTONE = 13,
+    OBSIDIAN = 14,
+    BRICK = 15,
+    MOSSY_STONE = 16,
+    GRAVEL = 17,
+    GOLD_ORE = 18,
+    IRON_ORE = 19,
+    DIAMOND_ORE = 20,
+    EMERALD_ORE = 21,
+    REDSTONE_ORE = 22
 };
 
 class VoxelChunk
