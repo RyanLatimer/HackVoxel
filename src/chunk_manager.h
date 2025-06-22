@@ -89,13 +89,15 @@ private:
     
     // Tracking
     ChunkCoord lastPlayerChunk;
-    mutable int lastRenderedCount;
-      // Terrain generation with enhanced noise systems
+    mutable int lastRenderedCount;    // Enhanced terrain generation with realistic noise systems
     FastNoiseLite heightNoise;
     FastNoiseLite caveNoise;
     FastNoiseLite biomeNoise;
     FastNoiseLite temperatureNoise;
     FastNoiseLite humidityNoise;
+    FastNoiseLite ridgeNoise;       // For mountain ridges
+    FastNoiseLite erosionNoise;     // For erosion patterns
+    FastNoiseLite vegetationNoise;  // For vegetation density
     
     // Cache for performance
     std::vector<ChunkCoord> chunksToLoad;

@@ -93,40 +93,38 @@ void VoxelChunk::generateMesh()
             {
                 BlockType blockType = blocks[x][y][z];
                 if (blockType == BlockType::AIR)
-                    continue;
-
-                // Front face (positive Z) - face direction 0
-                if (isAir(x, y, z + 1))
+                    continue;                // Front face (positive Z) - face direction 0
+                if (isTransparent(x, y, z + 1))
                 {
                     addFace(x, y, z + 1, x + 1, y, z + 1, x + 1, y + 1, z + 1, x, y + 1, z + 1, indexOffset, blockType, 0);
                 }
 
                 // Back face (negative Z) - face direction 1
-                if (isAir(x, y, z - 1))
+                if (isTransparent(x, y, z - 1))
                 {
                     addFace(x + 1, y, z, x, y, z, x, y + 1, z, x + 1, y + 1, z, indexOffset, blockType, 1);
                 }
 
                 // Right face (positive X) - face direction 2
-                if (isAir(x + 1, y, z))
+                if (isTransparent(x + 1, y, z))
                 {
                     addFace(x + 1, y, z, x + 1, y, z + 1, x + 1, y + 1, z + 1, x + 1, y + 1, z, indexOffset, blockType, 2);
                 }
 
                 // Left face (negative X) - face direction 3
-                if (isAir(x - 1, y, z))
+                if (isTransparent(x - 1, y, z))
                 {
                     addFace(x, y, z + 1, x, y, z, x, y + 1, z, x, y + 1, z + 1, indexOffset, blockType, 3);
                 }
 
                 // Top face (positive Y) - face direction 4
-                if (isAir(x, y + 1, z))
+                if (isTransparent(x, y + 1, z))
                 {
                     addFace(x, y + 1, z, x + 1, y + 1, z, x + 1, y + 1, z + 1, x, y + 1, z + 1, indexOffset, blockType, 4);
                 }
 
                 // Bottom face (negative Y) - face direction 5
-                if (isAir(x, y - 1, z))
+                if (isTransparent(x, y - 1, z))
                 {
                     addFace(x, y, z + 1, x + 1, y, z + 1, x + 1, y, z, x, y, z, indexOffset, blockType, 5);
                 }
@@ -225,11 +223,11 @@ TextureAtlas::TextureUV VoxelChunk::getTextureForBlock(BlockType blockType, int 
                 return textureAtlas->getUV(TextureAtlas::BlockType::WOOD_LOG_TOP);
             } else { // Side faces
                 return textureAtlas->getUV(TextureAtlas::BlockType::WOOD_LOG_SIDE);
-            }
-        case BlockType::LEAVES:
+            }        case BlockType::LEAVES:
             return textureAtlas->getUV(TextureAtlas::BlockType::LEAVES);
         case BlockType::SAND:
-            return textureAtlas->getUV(TextureAtlas::BlockType::SAND);        case BlockType::WATER:
+            return textureAtlas->getUV(TextureAtlas::BlockType::SAND);
+        case BlockType::WATER:
             return textureAtlas->getUV(TextureAtlas::BlockType::WATER);
         case BlockType::BEDROCK:
             return textureAtlas->getUV(TextureAtlas::BlockType::BEDROCK);
@@ -275,4 +273,15 @@ void VoxelChunk::regenerateMesh() {
     
     // Regenerate the mesh
     generateMesh();
+}
+
+bool VoxelChunk::isTransparent(int x, int y, int z) const
+{
+    if (x < 0 || x >= CHUNK_SIZE ||
+        y < 0 || y >= CHUNK_SIZE ||
+        z < 0 || z >= CHUNK_SIZE)
+        return true; // Out of bounds is considered transparent
+
+    BlockType blockType = blocks[x][y][z];
+    return blockType == BlockType::AIR || blockType == BlockType::WATER;
 }

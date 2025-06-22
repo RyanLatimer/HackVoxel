@@ -57,6 +57,7 @@ private:
                  float x3, float y3, float z3, float x4, float y4, float z4,
                  unsigned int& indexOffset, BlockType blockType, int faceDirection);
     bool isAir(int x, int y, int z) const;
+    bool isTransparent(int x, int y, int z) const;
     TextureAtlas::TextureUV getTextureForBlock(BlockType blockType, int faceDirection) const;
 
 private:

@@ -352,15 +352,16 @@ void TextureAtlas::generateWaterTexture(unsigned char* data, int startX, int sta
         for (int x = 0; x < textureSize; x++) {
             int index = ((startY + y) * atlasSize + (startX + x)) * 3;
             
-            // Beautiful deep blue water with flowing patterns
-            float wave1 = sin((x + y) * 0.6f) * 0.15f + 0.85f;
-            float wave2 = cos(x * 0.8f - y * 0.7f) * 0.1f + 0.9f;
-            float depth = noise(x, y, 7000) * 0.2f + 0.8f;
-            float sparkle = noise(x * 4, y * 4, 7001) > 0.8f ? 1.3f : 1.0f;
+            // Bright, vibrant blue water with flowing patterns
+            float wave1 = sin((x + y) * 0.6f) * 0.1f + 0.9f;
+            float wave2 = cos(x * 0.8f - y * 0.7f) * 0.05f + 0.95f;
+            float depth = noise(x, y, 7000) * 0.1f + 0.9f;
+            float sparkle = noise(x * 4, y * 4, 7001) > 0.7f ? 1.2f : 1.0f;
             
-            data[index] = clamp(25 * depth * wave1);                    // R - minimal
-            data[index + 1] = clamp(120 * depth * wave2);              // G - turquoise
-            data[index + 2] = clamp(255 * depth * wave1 * sparkle);    // B - deep blue
+            // Make water clearly blue and bright
+            data[index] = clamp(40 * depth * wave1);                     // R - low red
+            data[index + 1] = clamp(150 * depth * wave2);                // G - medium cyan
+            data[index + 2] = clamp(255 * depth * wave1 * sparkle);      // B - bright blue
         }
     }
 }
