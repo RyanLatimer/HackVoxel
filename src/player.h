@@ -7,6 +7,9 @@
 #include "voxel_chunk.h"
 #include <vector>
 
+// Forward declaration
+class ChunkManager;
+
 /**
  * Player class that handles first-person character physics, collision detection,
  * and movement in the voxel world. Controls the camera position based on physics.
@@ -36,24 +39,22 @@ public:
     bool isOnGround;             // Whether player is touching ground
     bool canJump;                // Whether player can jump (prevents bunny hopping)
     
-    // ============================================================================
-    // CONSTRUCTOR
+    // ============================================================================    // CONSTRUCTOR
     // ============================================================================
     Player(glm::vec3 startPosition = glm::vec3(0.0f, 20.0f, 0.0f));
     
-    // ============================================================================
-    // UPDATE METHODS
+    // ============================================================================    // UPDATE METHODS
     // ============================================================================
     void update(float deltaTime, GLFWwindow* window, Camera& camera, 
-                const std::vector<VoxelChunk>& chunks);
+                ChunkManager& chunkManager);
     
     // ============================================================================
     // COLLISION DETECTION
     // ============================================================================
-    bool checkCollision(glm::vec3 newPosition, const std::vector<VoxelChunk>& chunks);
-    bool isBlockSolid(int worldX, int worldY, int worldZ, const std::vector<VoxelChunk>& chunks);
+    bool checkCollision(glm::vec3 newPosition, ChunkManager& chunkManager);
+    bool isBlockSolid(int worldX, int worldY, int worldZ, ChunkManager& chunkManager);
     glm::vec3 resolveCollision(glm::vec3 oldPos, glm::vec3 newPos, 
-                              const std::vector<VoxelChunk>& chunks);
+                              ChunkManager& chunkManager);
     
     // ============================================================================
     // INPUT PROCESSING
@@ -61,10 +62,9 @@ public:
     void processInput(GLFWwindow* window, Camera& camera, float deltaTime);
     
 private:
-    // ============================================================================
-    // INTERNAL PHYSICS HELPERS
+    // ============================================================================    // INTERNAL PHYSICS HELPERS
     // ============================================================================
     void applyGravity(float deltaTime);
     void applyFriction(float deltaTime);
-    void updateGroundState(const std::vector<VoxelChunk>& chunks);
+    void updateGroundState(ChunkManager& chunkManager);
 };

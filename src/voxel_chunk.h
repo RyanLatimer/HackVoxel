@@ -34,6 +34,10 @@ public:
     int getWorldX() const { return worldX; }
     int getWorldZ() const { return worldZ; }
     BlockType getBlockType(int x, int y, int z) const;
+    
+    // Methods for chunk management
+    void setBlock(int x, int y, int z, BlockType blockType);
+    void regenerateMesh();
 
 private:
     void generateMesh();

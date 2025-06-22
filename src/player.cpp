@@ -1,4 +1,5 @@
 #include "player.h"
+#include "chunk_manager.h"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -26,7 +27,7 @@ Player::Player(glm::vec3 startPosition)
 // MAIN UPDATE LOOP - PROCESS PHYSICS AND INPUT
 // ============================================================================
 void Player::update(float deltaTime, GLFWwindow* window, Camera& camera, 
-                   const std::vector<VoxelChunk>& chunks) {
+                   ChunkManager& chunkManager) {
     // Process player input
     processInput(window, camera, deltaTime);
     
@@ -38,10 +39,10 @@ void Player::update(float deltaTime, GLFWwindow* window, Camera& camera,
     glm::vec3 newPosition = position + velocity * deltaTime;
     
     // Resolve collisions and update position
-    position = resolveCollision(position, newPosition, chunks);
+    position = resolveCollision(position, newPosition, chunkManager);
     
     // Update ground state for next frame
-    updateGroundState(chunks);
+    updateGroundState(chunkManager);
     
     // Update camera to follow player (eye level is at player height - 0.2f)
     camera.position = position + glm::vec3(0.0f, size.y - 0.2f, 0.0f);
@@ -138,12 +139,12 @@ void Player::applyFriction(float deltaTime) {
 // COLLISION RESOLUTION - SEPARATE AXES FOR BETTER BEHAVIOR
 // ============================================================================
 glm::vec3 Player::resolveCollision(glm::vec3 oldPos, glm::vec3 newPos, 
-                                  const std::vector<VoxelChunk>& chunks) {
+                                  ChunkManager& chunkManager) {
     glm::vec3 resolvedPos = oldPos;
     
     // Test X movement
     glm::vec3 testPosX = glm::vec3(newPos.x, oldPos.y, oldPos.z);
-    if (!checkCollision(testPosX, chunks)) {
+    if (!checkCollision(testPosX, chunkManager)) {
         resolvedPos.x = newPos.x;
     } else {
         velocity.x = 0.0f;  // Stop horizontal movement
@@ -151,7 +152,7 @@ glm::vec3 Player::resolveCollision(glm::vec3 oldPos, glm::vec3 newPos,
     
     // Test Z movement
     glm::vec3 testPosZ = glm::vec3(resolvedPos.x, oldPos.y, newPos.z);
-    if (!checkCollision(testPosZ, chunks)) {
+    if (!checkCollision(testPosZ, chunkManager)) {
         resolvedPos.z = newPos.z;
     } else {
         velocity.z = 0.0f;  // Stop horizontal movement
@@ -159,7 +160,7 @@ glm::vec3 Player::resolveCollision(glm::vec3 oldPos, glm::vec3 newPos,
     
     // Test Y movement (gravity/jumping)
     glm::vec3 testPosY = glm::vec3(resolvedPos.x, newPos.y, resolvedPos.z);
-    if (!checkCollision(testPosY, chunks)) {
+    if (!checkCollision(testPosY, chunkManager)) {
         resolvedPos.y = newPos.y;
     } else {
         if (velocity.y < 0.0f) {
@@ -175,7 +176,7 @@ glm::vec3 Player::resolveCollision(glm::vec3 oldPos, glm::vec3 newPos,
 // ============================================================================
 // CHECK COLLISION WITH PLAYER BOUNDING BOX
 // ============================================================================
-bool Player::checkCollision(glm::vec3 newPosition, const std::vector<VoxelChunk>& chunks) {
+bool Player::checkCollision(glm::vec3 newPosition, ChunkManager& chunkManager) {
     // Player bounding box corners (centered on position)
     glm::vec3 minBounds = newPosition - glm::vec3(size.x * 0.5f, 0.0f, size.z * 0.5f);
     glm::vec3 maxBounds = newPosition + glm::vec3(size.x * 0.5f, size.y, size.z * 0.5f);
@@ -184,7 +185,7 @@ bool Player::checkCollision(glm::vec3 newPosition, const std::vector<VoxelChunk>
     for (int x = (int)floor(minBounds.x); x <= (int)floor(maxBounds.x); x++) {
         for (int y = (int)floor(minBounds.y); y <= (int)floor(maxBounds.y); y++) {
             for (int z = (int)floor(minBounds.z); z <= (int)floor(maxBounds.z); z++) {
-                if (isBlockSolid(x, y, z, chunks)) {
+                if (isBlockSolid(x, y, z, chunkManager)) {
                     return true;  // Collision detected
                 }
             }
@@ -197,43 +198,22 @@ bool Player::checkCollision(glm::vec3 newPosition, const std::vector<VoxelChunk>
 // ============================================================================
 // CHECK IF A BLOCK IS SOLID AT WORLD COORDINATES
 // ============================================================================
-bool Player::isBlockSolid(int worldX, int worldY, int worldZ, const std::vector<VoxelChunk>& chunks) {
-    // Check bounds
+bool Player::isBlockSolid(int worldX, int worldY, int worldZ, ChunkManager& chunkManager) {
+    // Check if below world
     if (worldY < 0) {
-        return true;  // Below world is solid
-    }
-    if (worldY >= VoxelChunk::CHUNK_SIZE) {
-        return false; // Above world is air
+        return true;  // Below world is solid (bedrock)
     }
     
-    // Calculate which chunk contains this world position
-    int chunkX = worldX / VoxelChunk::CHUNK_SIZE;
-    int chunkZ = worldZ / VoxelChunk::CHUNK_SIZE;
-    
-    // Handle negative coordinates properly
-    if (worldX < 0) chunkX = (worldX + 1) / VoxelChunk::CHUNK_SIZE - 1;
-    if (worldZ < 0) chunkZ = (worldZ + 1) / VoxelChunk::CHUNK_SIZE - 1;
-    
-    // Local coordinates within chunk
-    int localX = worldX - chunkX * VoxelChunk::CHUNK_SIZE;
-    int localZ = worldZ - chunkZ * VoxelChunk::CHUNK_SIZE;
-    
-    // Find the corresponding chunk
-    for (const auto& chunk : chunks) {
-        if (chunk.getWorldX() == chunkX && chunk.getWorldZ() == chunkZ) {
-            return chunk.isBlockSolid(localX, worldY, localZ);
-        }
-    }
-    
-    // Chunk not found - assume air
-    return false;
+    // Let ChunkManager handle all coordinate checking and bounds
+    glm::vec3 worldPos(worldX, worldY, worldZ);
+    return chunkManager.isBlockSolid(worldPos);
 }
 
 // ============================================================================
 // UPDATE GROUND STATE FOR NEXT FRAME
 // ============================================================================
-void Player::updateGroundState(const std::vector<VoxelChunk>& chunks) {
+void Player::updateGroundState(ChunkManager& chunkManager) {
     // Check if player is standing on ground (slightly below current position)
     glm::vec3 groundCheckPos = position - glm::vec3(0.0f, 0.1f, 0.0f);
-    isOnGround = checkCollision(groundCheckPos, chunks);
+    isOnGround = checkCollision(groundCheckPos, chunkManager);
 }

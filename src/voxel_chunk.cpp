@@ -27,40 +27,8 @@ VoxelChunk::VoxelChunk(int worldX, int worldZ) : worldX(worldX), worldZ(worldZ)
         }
     }
 
-    // Generate terrain with different block types
-    for (int x = 0; x < CHUNK_SIZE; x++)
-    {
-        for (int z = 0; z < CHUNK_SIZE; z++)
-        {
-            float globalX = worldX * CHUNK_SIZE + x;
-            float globalZ = worldZ * CHUNK_SIZE + z;
-
-            float heightValue = simpleNoise(globalX, globalZ);
-            int height = (int)((heightValue + 1.0f) * 0.5f * CHUNK_SIZE);
-
-            for (int y = 0; y < CHUNK_SIZE; y++)
-            {
-                if (y <= height) {
-                    // Generate different layers
-                    if (y == 0) {
-                        blocks[x][y][z] = BlockType::BEDROCK;
-                    } else if (y == height && height > 3) {
-                        blocks[x][y][z] = BlockType::GRASS;
-                    } else if (y > height - 3) {
-                        blocks[x][y][z] = BlockType::DIRT;
-                    } else {
-                        blocks[x][y][z] = BlockType::STONE;
-                    }
-                } else {
-                    blocks[x][y][z] = BlockType::AIR;
-                }
-            }
-        }
-    }
-
-    generateMesh();
-    std::cout << "Chunk (" << worldX << "," << worldZ << ") created with " 
-              << vertices.size()/5 << " vertices, " << indices.size()/3 << " triangles" << std::endl;
+    // Note: Terrain generation is now handled by ChunkManager
+    // Mesh generation will be called after terrain is set
 }
 
 void VoxelChunk::render(unsigned int shaderID)
@@ -269,4 +237,19 @@ TextureAtlas::TextureUV VoxelChunk::getTextureForBlock(BlockType blockType, int 
         default:
             return textureAtlas->getUV(TextureAtlas::BlockType::STONE);
     }
+}
+
+void VoxelChunk::setBlock(int x, int y, int z, BlockType blockType) {
+    if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE) {
+        blocks[x][y][z] = blockType;
+    }
+}
+
+void VoxelChunk::regenerateMesh() {
+    // Clear existing mesh data
+    vertices.clear();
+    indices.clear();
+    
+    // Regenerate the mesh
+    generateMesh();
 }

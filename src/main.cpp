@@ -16,9 +16,9 @@
 #include "voxel_chunk.h"
 #include "player.h"
 #include "texture_atlas.h"
+#include "chunk_manager.h"
 
-std::vector<VoxelChunk> chunks;
-int gridSize = 4;
+ChunkManager chunkManager;
 TextureAtlas* textureAtlas = nullptr;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -103,19 +103,10 @@ int main()
     if (!textureAtlas->initialize()) {
         std::cerr << "Failed to initialize texture atlas!" << std::endl;
         return -1;
-    }
-    VoxelChunk::textureAtlas = textureAtlas; // Set static reference
-    std::cout << "Texture atlas created successfully" << std::endl;
-
-    // NOW initialize chunks after OpenGL is ready
-    std::cout << "Creating chunks..." << std::endl;
-    for (int x = -gridSize; x <= gridSize; x++)
-    {
-        for (int z = -gridSize; z <= gridSize; z++)
-        {
-            chunks.emplace_back(x, z);
-        }
-    }
+    }    VoxelChunk::textureAtlas = textureAtlas; // Set static reference
+    std::cout << "Texture atlas created successfully" << std::endl;    // Initialize chunk manager (infinite world system)
+    std::cout << "Initializing chunk manager for infinite world..." << std::endl;
+    chunkManager.initialize(player.position);
     
     // Compile shaders
     GLuint shaderProgram = createShader(vertexSrc, fragmentSrc);
@@ -123,9 +114,7 @@ int main()
         std::cerr << "Failed to create shader program!" << std::endl;
         return -1;
     }
-    std::cout << "Shader program created successfully" << std::endl;
-    std::cout << "Initialized " << chunks.size() << " chunks" << std::endl;
-    std::cout << "Starting render loop..." << std::endl;
+    std::cout << "Shader program created successfully" << std::endl;    std::cout << "Starting render loop..." << std::endl;
 
     while (!glfwWindowShouldClose(window))
     {        // Frame timing
@@ -133,27 +122,27 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         
+        // Update chunk manager based on player position
+        chunkManager.update(player.position);
+        
         // Update player physics and input (this will also update camera position)
-        player.update(deltaTime, window, camera, chunks);
+        player.update(deltaTime, window, camera, chunkManager);
         
         // Clear
         glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // Setup matrices once
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);        // Setup matrices
         glm::mat4 view = camera.getViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), 800.0f / 600.0f, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), 800.0f / 600.0f, 0.1f, 1000.0f);
+        
+        // Use shader program first
         glUseProgram(shaderProgram);
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));        // Bind texture atlas
+        
+        // Bind texture atlas
         textureAtlas->bind(0);
         glUniform1i(glGetUniformLocation(shaderProgram, "ourTexture"), 0);
 
-        // Render all chunks
-        for (VoxelChunk &chunk : chunks)
-        {
-            chunk.render(shaderProgram);
-        }
+        // Render chunks using ChunkManager
+        chunkManager.render(shaderProgram, player.position, view, projection);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
