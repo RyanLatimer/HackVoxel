@@ -169,36 +169,40 @@ glm::vec3 calculateAtmosphericColor(float timeOfDay) {
 const char *vertexSrc = R"(
 #version 330 core
 layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec2 aTexCoord;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoord;
 
 uniform mat4 model, view, projection;
 
 out vec2 TexCoord;
+out vec3 Normal;
 
 void main() {
     gl_Position = projection * view * model * vec4(aPos, 1.0);
     TexCoord = aTexCoord;
+    Normal = aNormal;
 }
 )";
 
 const char *fragmentSrc = R"(
 #version 330 core
 in vec2 TexCoord;
+in vec3 Normal;
 out vec4 FragColor;
 
 uniform sampler2D ourTexture;
+uniform vec3 lightDirection; // world-space dir pointing *toward* light
 
-void main() { 
+void main() {
+    vec3 norm = normalize(Normal);
+    float diff = max(dot(norm, -lightDirection), 0.3); // basic lambert + ambient floor
     vec4 texColor = texture(ourTexture, TexCoord);
-    
-    // Check if this is a water texture (by color signature)
-    // Water textures have low red, medium green, high blue
+
+    // Water transparency heuristic
     if (texColor.r < 0.2 && texColor.g > 0.3 && texColor.g < 0.7 && texColor.b > 0.7) {
-        // Apply transparency to water
-        FragColor = vec4(texColor.rgb, 0.6);
+        FragColor = vec4(texColor.rgb * diff, 0.6);
     } else {
-        // Normal solid block
-        FragColor = texColor;
+        FragColor = vec4(texColor.rgb * diff, texColor.a);
     }
 }
 )";

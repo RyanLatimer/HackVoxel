@@ -146,13 +146,17 @@ void VoxelChunk::generateMesh()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
-    // Position attribute (3 floats)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        // Position attribute (location 0) - 3 floats
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    
-    // Texture coordinate attribute (2 floats)
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    // Normal attribute (location 1) - 3 floats
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // Texture coordinate attribute (location 2) - 2 floats
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
 }
@@ -165,12 +169,25 @@ void VoxelChunk::addFace(float x1, float y1, float z1, float x2, float y2, float
     TextureAtlas::TextureUV uv = getTextureForBlock(blockType, faceDirection);
     
     // Add vertex positions and texture coordinates
-    // Each vertex has 5 components: x, y, z, u, v
+    // Each vertex has 8 components: x, y, z, nx, ny, nz, u, v
+        // Compute normal based on face direction (axis aligned)
+    glm::vec3 normal;
+    switch(faceDirection) {
+        case 0: normal = glm::vec3(0.0f, 0.0f, 1.0f); break; // front +Z
+        case 1: normal = glm::vec3(0.0f, 0.0f, -1.0f); break; // back -Z
+        case 2: normal = glm::vec3(1.0f, 0.0f, 0.0f); break; // right +X
+        case 3: normal = glm::vec3(-1.0f, 0.0f, 0.0f); break; // left -X
+        case 4: normal = glm::vec3(0.0f, 1.0f, 0.0f); break; // top +Y
+        case 5: normal = glm::vec3(0.0f, -1.0f, 0.0f); break; // bottom -Y
+        default: normal = glm::vec3(0.0f); break;
+    }
+
     float face[] = {
-        x1, y1, z1, uv.u1, uv.v1,  // bottom-left
-        x2, y2, z2, uv.u2, uv.v1,  // bottom-right
-        x3, y3, z3, uv.u2, uv.v2,  // top-right
-        x4, y4, z4, uv.u1, uv.v2   // top-left
+        // pos                  // normal               // uv
+        x1, y1, z1, normal.x, normal.y, normal.z, uv.u1, uv.v1,
+        x2, y2, z2, normal.x, normal.y, normal.z, uv.u2, uv.v1,
+        x3, y3, z3, normal.x, normal.y, normal.z, uv.u2, uv.v2,
+        x4, y4, z4, normal.x, normal.y, normal.z, uv.u1, uv.v2
     };
 
     // Add face indices (two triangles)
