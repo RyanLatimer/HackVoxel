@@ -1,4 +1,4 @@
-# HackVoxel 🎮
+# HackVoxel
 
 A simple voxel engine I built for Hack Club's Summer of Making! This project demonstrates path-traced block picking and procedural terrain generation using noise algorithms.
 
