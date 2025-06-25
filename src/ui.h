@@ -30,6 +30,11 @@ public:
     void handleNumberKey(int key);
     void toggleInventory(); // F key to open/close inventory
     bool isInventoryOpen() const { return inventoryOpen; }
+
+    // Inventory manipulation (for mining/placing blocks)
+    void addBlockToInventory(BlockType blockType);
+    bool removeBlockFromInventory(BlockType blockType);
+    int getBlockCount(BlockType blockType);
     
     // Game state display
     void setTargetedBlock(BlockType blockType, const glm::vec3& position);
@@ -89,7 +94,4 @@ private:
     
     // Block inventory management
     void initializeInventoryBlocks();
-    void addBlockToInventory(BlockType blockType);
-    bool removeBlockFromInventory(BlockType blockType);
-    int getBlockCount(BlockType blockType);
 };

@@ -335,7 +335,12 @@ int main()
             
             // Handle left mouse click (mine block)
             if (leftMouseJustPressed && hit.hit) {
-                blockInteraction->mineBlock(hit.blockPosition, chunkManager);
+                // Determine block type before mining so we can give it to the player
+                BlockType targetType = chunkManager.getBlockType(hit.blockPosition);
+                if (blockInteraction->mineBlock(hit.blockPosition, chunkManager)) {
+                    // Add the mined block to the player's inventory (similar to Minecraft)
+                    gameUI->addBlockToInventory(targetType);
+                }
                 leftMouseJustPressed = false;
             }
             
@@ -343,7 +348,12 @@ int main()
             if (rightMouseJustPressed && hit.hit) {
                 glm::vec3 placePos = blockInteraction->getPlacementPosition(hit);
                 BlockType selectedBlock = gameUI->getSelectedBlockType();
-                blockInteraction->placeBlock(placePos, selectedBlock, chunkManager);
+                // Only place a block if the player actually has one in their inventory
+                if (selectedBlock != BlockType::AIR && gameUI->removeBlockFromInventory(selectedBlock)) {
+                    blockInteraction->placeBlock(placePos, selectedBlock, chunkManager);
+                } else {
+                    std::cout << "No more blocks of this type in inventory!" << std::endl;
+                }
                 rightMouseJustPressed = false;
             }
         }
