@@ -1,6 +1,17 @@
-# HackVoxel
+# HackVoxel 🎮
 
-A modern C++ OpenGL project for 3D graphics and voxel-based rendering.
+A simple voxel engine I built for Hack Club's Summer of Making! This project demonstrates path-traced block picking and procedural terrain generation using noise algorithms.
+
+## What is this?
+
+HackVoxel is my attempt at creating a Minecraft-like voxel world from scratch using modern OpenGL. The main features include:
+
+- **Path-traced block picking** - Click on blocks with pixel-perfect accuracy using ray tracing
+- **Procedural terrain generation** - Infinite worlds generated using Perlin/Simplex noise
+- **Voxel rendering** - Efficient rendering of block-based worlds
+- **Interactive exploration** - Walk around and modify the generated terrain
+
+This was built as part of my Summer of Making project to learn more about 3D graphics programming and game engine development.
 
 ## Project Structure
 
@@ -20,82 +31,81 @@ HackVoxel/
 └── README.md             # This file
 ```
 
-## Dependencies
+## How to Build & Run
 
-- **GLFW 3.4**: Cross-platform window and input handling
-- **GLAD**: OpenGL function loader
-- **OpenGL 3.3+**: Graphics API
+### What you'll need:
+- CMake 3.16+
+- Visual Studio 2022 (Windows) or GCC/Clang (Linux/macOS)
+- A graphics card that supports OpenGL 3.3+
 
-## Building
+### Building on Windows:
 
-### Prerequisites
-
-- CMake 3.16 or higher
-- Visual Studio 2022 (on Windows) or GCC/Clang (on Linux/macOS)
-- OpenGL 3.3+ compatible graphics drivers
-
-### Windows (Visual Studio)
-
-1. Open a command prompt in the project directory
-2. Create a build directory:
+1. Clone this repo and open a command prompt in the project folder
+2. Create and enter a build directory:
    ```cmd
    mkdir build
    cd build
    ```
-3. Generate Visual Studio project files:
+3. Generate the project files:
    ```cmd
    cmake ..
    ```
-4. Build the project:
+4. Build it:
    ```cmd
    cmake --build . --config Release
    ```
+5. Run the executable: `build/Release/HackVoxel.exe`
 
-### Alternative: Using Visual Studio directly
+You can also just open the folder directly in Visual Studio 2022 - it'll detect the CMake file automatically!
 
-1. Open Visual Studio 2022
-2. Select "Open a local folder"
-3. Select the HackVoxel directory
-4. Visual Studio will detect the CMakeLists.txt and configure the project
-5. Build using Ctrl+B
+## Controls & Features
 
-## Running
+- **WASD** - Move around the world
+- **Mouse** - Look around
+- **ESC** - Quit
 
-After building, you can run the executable:
+The terrain generates procedurally as you explore, creating hills, valleys, and interesting landscapes using noise functions.
 
-- Windows: `build/Release/HackVoxel.exe` (or `build/Debug/HackVoxel.exe` for debug build)
-- The application will open an OpenGL window with a dark teal background
+## Cool Technical Stuff
 
-## Features
+### Path-Traced Block Picking
+Instead of using traditional selection methods, this engine casts rays from the camera through each pixel to determine exactly which block you're looking at. This gives perfect accuracy even at long distances or weird angles.
 
-- Basic OpenGL 3.3 Core Profile setup
-- GLFW window management
-- GLAD OpenGL function loading
-- Cross-platform CMake build system
-- Proper error handling and initialization
-- Ready for 3D graphics development
+### Noise-Based Terrain
+The world is generated using multiple octaves of Perlin noise to create realistic-looking terrain with hills, valleys, and natural-looking features. No two worlds are the same!
 
-## Development
+### Efficient Voxel Rendering
+The engine only renders visible faces of blocks and uses frustum culling to avoid drawing chunks that aren't in view, keeping performance smooth even with large worlds.
 
-The project is set up for modern OpenGL development with:
+## Summer of Making 2024
 
-- OpenGL 3.3 Core Profile
-- Depth testing enabled
-- Proper viewport management
-- Input handling (ESC to quit)
-- Debug information output
+This project represents my journey learning about:
+- 3D graphics programming with OpenGL
+- Ray casting and intersection algorithms  
+- Procedural generation techniques
+- Game engine architecture
+- Performance optimization for real-time rendering
 
-## Next Steps
+It's been an awesome learning experience and I'm excited to keep expanding it!
 
-This is a foundation for OpenGL development. You can extend it by adding:
+## What's Next?
 
-- Shader loading and management
-- Vertex buffer objects and vertex arrays
-- Texture loading
-- 3D transformations and camera
-- Voxel rendering system
-- Scene management
+Some ideas I'm considering for future development:
+- Water simulation and rendering
+- Better lighting system (maybe even global illumination!)
+- Multiplayer support
+- Save/load functionality for worlds
+- More sophisticated terrain features (caves, structures, etc.)
+- Particle systems for effects
+
+## Dependencies
+
+- **GLFW 3.4** - Window management and input
+- **GLAD** - OpenGL function loading
+- **OpenGL 3.3+** - The graphics API powering everything
 
 ## License
 
-This project is open source. Add your license information here.
+Licensed under the MIT License
+
+
