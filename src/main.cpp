@@ -19,13 +19,23 @@
 #include "chunk_manager.h"
 #include "skybox.h"
 #include "water_shader.h"
+#include "ui.h"
+#include "block_interaction.h"
 
 // Global variables
 ChunkManager chunkManager;
 TextureAtlas* textureAtlas = nullptr;
 Skybox* skybox = nullptr;
 WaterShader* waterShader = nullptr;
+UI* gameUI = nullptr;
+BlockInteraction* blockInteraction = nullptr;
 float timeOfDay = 0.5f; // 0.0 = midnight, 0.5 = noon, 1.0 = midnight
+
+// Mouse state tracking for click detection
+bool leftMousePressed = false;
+bool rightMousePressed = false;
+bool leftMouseJustPressed = false;
+bool rightMouseJustPressed = false;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
@@ -40,6 +50,71 @@ Player player;
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
     camera.processMouseMovement(xpos, ypos);
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            leftMousePressed = true;
+            leftMouseJustPressed = true;
+        } else if (action == GLFW_RELEASE) {
+            leftMousePressed = false;
+        }
+    }
+    
+    if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        if (action == GLFW_PRESS) {
+            rightMousePressed = true;
+            rightMouseJustPressed = true;
+        } else if (action == GLFW_RELEASE) {
+            rightMousePressed = false;
+        }
+    }
+    
+    // Middle mouse button - block picking (like Minecraft)
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS) {
+        if (blockInteraction && gameUI) {
+            RaycastHit hit = blockInteraction->raycastToBlock(camera, chunkManager);
+            if (hit.hit) {
+                BlockType targetedBlock = chunkManager.getBlockType(hit.blockPosition);
+                if (targetedBlock != BlockType::AIR) {
+                    gameUI->setSelectedBlockType(targetedBlock);
+                    std::cout << "Picked block: " << gameUI->getBlockName(targetedBlock) << std::endl;
+                }
+            }
+        }
+    }
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    if (gameUI && !gameUI->isInventoryOpen()) {
+        // Only handle hotbar scrolling when inventory is closed
+        gameUI->handleScrollInput(yoffset);
+    }
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS && gameUI) {
+        // Handle number keys for hotbar selection
+        if (key >= GLFW_KEY_1 && key <= GLFW_KEY_9) {
+            gameUI->handleNumberKey(key - GLFW_KEY_0);
+        }
+        
+        // Toggle inventory with E key (like Minecraft)
+        if (key == GLFW_KEY_E) {
+            gameUI->toggleInventory();
+        }
+        
+        // Toggle inventory with I key (alternative)
+        if (key == GLFW_KEY_I) {
+            gameUI->toggleInventory();
+        }
+        
+        // F3 for debug info toggle (placeholder for future implementation)
+        if (key == GLFW_KEY_F3) {
+            std::cout << "Debug info toggled (not implemented yet)" << std::endl;
+        }
+    }
 }
 
 // Enhanced atmospheric color calculation for smooth transitions
@@ -166,6 +241,9 @@ int main()
     
     glfwMakeContextCurrent(window);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetKeyCallback(window, key_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
@@ -200,6 +278,22 @@ int main()
     }
     std::cout << "Water shader created successfully" << std::endl;
     
+    // Initialize UI system
+    gameUI = new UI();
+    if (!gameUI->initialize()) {
+        std::cerr << "Failed to initialize UI system!" << std::endl;
+        return -1;
+    }
+    std::cout << "UI system created successfully" << std::endl;
+    
+    // Initialize block interaction system
+    blockInteraction = new BlockInteraction();
+    if (!blockInteraction->initialize()) {
+        std::cerr << "Failed to initialize block interaction system!" << std::endl;
+        return -1;
+    }
+    std::cout << "Block interaction system created successfully" << std::endl;
+    
     // Initialize chunk manager (infinite world system)
     std::cout << "Initializing chunk manager for infinite world..." << std::endl;
     chunkManager.initialize(player.position);
@@ -222,7 +316,39 @@ int main()
         
         // Update player physics and input (this will also update camera position)
         player.update(deltaTime, window, camera, chunkManager);
-          // Update skybox animation
+        
+        // Handle block interaction
+        if (blockInteraction && gameUI) {
+            RaycastHit hit = blockInteraction->raycastToBlock(camera, chunkManager);
+            
+            // Update UI with targeted block info
+            if (hit.hit) {
+                BlockType targetedBlock = chunkManager.getBlockType(hit.blockPosition);
+                gameUI->setTargetedBlock(targetedBlock, hit.blockPosition);
+            } else {
+                gameUI->clearTargetedBlock();
+            }
+            
+            // Handle left mouse click (mine block)
+            if (leftMouseJustPressed && hit.hit) {
+                blockInteraction->mineBlock(hit.blockPosition, chunkManager);
+                leftMouseJustPressed = false;
+            }
+            
+            // Handle right mouse click (place block)
+            if (rightMouseJustPressed && hit.hit) {
+                glm::vec3 placePos = blockInteraction->getPlacementPosition(hit);
+                BlockType selectedBlock = gameUI->getSelectedBlockType();
+                blockInteraction->placeBlock(placePos, selectedBlock, chunkManager);
+                rightMouseJustPressed = false;
+            }
+        }
+        
+        // Reset mouse state
+        leftMouseJustPressed = false;
+        rightMouseJustPressed = false;
+        
+        // Update skybox animation
         skybox->update(deltaTime);
         
         // Update time of day with smoother, more realistic cycle
@@ -250,6 +376,21 @@ int main()
 
         // Render chunks using ChunkManager
         chunkManager.render(shaderProgram, player.position, view, projection);
+        
+        // Render block highlight if targeting a block
+        if (blockInteraction) {
+            RaycastHit hit = blockInteraction->raycastToBlock(camera, chunkManager);
+            if (hit.hit) {
+                blockInteraction->renderBlockHighlight(hit, shaderProgram, view, projection);
+            }
+        }
+        
+        // Render UI
+        if (gameUI) {
+            int windowWidth, windowHeight;
+            glfwGetWindowSize(window, &windowWidth, &windowHeight);
+            gameUI->render(windowWidth, windowHeight);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -265,6 +406,8 @@ int main()
     delete textureAtlas;
     delete skybox;
     delete waterShader;
+    delete gameUI;
+    delete blockInteraction;
     glDeleteProgram(shaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();
