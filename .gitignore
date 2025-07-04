@@ -30,7 +30,6 @@ x86/
 *.obj
 *.pdb
 *.idb
-*.exe
 *.dll
 *.manifest
 
